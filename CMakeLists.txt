@@ -12,7 +12,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 find_package(anari 0.11.0 REQUIRED COMPONENTS viewer)
 
-add_executable(${PROJECT_NAME} brdfExplorer.cpp ParamEditor.cpp)
+add_executable(${PROJECT_NAME} brdfExplorer.cpp ParamEditor.cpp material.cpp)
 target_link_libraries(${PROJECT_NAME} anari::anari anari::anari_viewer)
 
 set(anari_visionaray_dir "/Users/stefan/anari-visionaray")
