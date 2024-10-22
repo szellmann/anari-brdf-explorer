@@ -227,9 +227,6 @@ static anari::Geometry generateSphereMesh(anari::Device device, explorer::Materi
   float3 lightDir = normalize(g_lightDir);
   float3 lightIntensity{1.f};
   float3 Ng{0.f,1.f,0.f}, Ns{0.f,1.f,0.f};
-  int primID{0};
-  //dco::Sampler *samplers{nullptr};
-  float4 *attribs{nullptr};
 
   int segments = 400;
   int vertexCount = (segments - 1) * segments;
@@ -255,9 +252,7 @@ static anari::Geometry generateSphereMesh(anari::Device device, explorer::Materi
         sinf(phi) * sinf(theta));
 
       viewDir = normalize(float3(v.x,v.y,v.z));
-      //float3 value = evalMaterial(mat,samplers,attribs,primID,Ng,Ns,
-      //                            normalize(viewDir),lightDir,lightIntensity);
-      float3 value;
+      float3 value = mat.eval(Ng,Ns,normalize(viewDir),lightDir,lightIntensity);
       float scale = fabsf(value.y);
       position[cnt++] = v * scale;
     }
@@ -342,58 +337,6 @@ static anari::Geometry generateSampleMesh(anari::Device device, dco::Material ma
       device, geometry, "vertex.position", positionArray);
 
   return geometry;
-}
-#endif
-
-#if 0
-dco::Material generateMaterial()
-{
-  dco::Material::Type type;
-  if (std::string(g_selectedMaterial) == "Matte")
-    type = dco::Material::Matte;
-  else if (std::string(g_selectedMaterial) == "PBM")
-    type = dco::Material::PhysicallyBased;
-
-  dco::Material mat;
-  mat.type = type;
-
-  if (type == dco::Material::Matte) {
-    mat = dco::makeDefaultMaterial();
-    mat.asMatte.color.rgb = {1.f,1.f,1.f};
-  }
-  else if (type == dco::Material::PhysicallyBased) {
-    mat.asPhysicallyBased.baseColor.rgb = {1.f,1.f,1.f};
-    mat.asPhysicallyBased.baseColor.samplerID = UINT_MAX;
-    mat.asPhysicallyBased.baseColor.attribute = dco::Attribute::None;
-
-    mat.asPhysicallyBased.opacity.f = 1.f;
-    mat.asPhysicallyBased.opacity.samplerID = UINT_MAX;
-    mat.asPhysicallyBased.opacity.attribute = dco::Attribute::None;
-
-    mat.asPhysicallyBased.metallic.f = g_metallic;
-    mat.asPhysicallyBased.metallic.samplerID = UINT_MAX;
-    mat.asPhysicallyBased.metallic.attribute = dco::Attribute::None;
-
-    mat.asPhysicallyBased.roughness.f = g_roughness;
-    mat.asPhysicallyBased.roughness.samplerID = UINT_MAX;
-    mat.asPhysicallyBased.roughness.attribute = dco::Attribute::None;
-
-    mat.asPhysicallyBased.normal.samplerID = UINT_MAX;
-
-    mat.asPhysicallyBased.alphaMode = dco::AlphaMode::Opaque;
-    mat.asPhysicallyBased.alphaCutoff = 0.f;
-
-    mat.asPhysicallyBased.clearcoat.f = g_clearcoat;
-    mat.asPhysicallyBased.clearcoat.samplerID = UINT_MAX;
-    mat.asPhysicallyBased.clearcoat.attribute = dco::Attribute::None;
-
-    mat.asPhysicallyBased.clearcoatRoughness.f = g_clearcoatRoughness;
-    mat.asPhysicallyBased.clearcoatRoughness.samplerID = UINT_MAX;
-    mat.asPhysicallyBased.clearcoatRoughness.attribute = dco::Attribute::None;
-
-    mat.asPhysicallyBased.ior = g_ior;
-  }
-  return mat;
 }
 #endif
 
@@ -731,7 +674,7 @@ class Application : public anari_viewer::Application
     m_state.device = device;
     m_state.world = anari::newObject<anari::World>(device);
 
-    //addBRDFGeom(m_state.device, m_state.world);
+    addBRDFGeom(m_state.device, m_state.world);
     addPlaneAndArrows(m_state.device, m_state.world);
 
     anari::commitParameters(device, m_state.world);
