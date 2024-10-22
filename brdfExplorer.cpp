@@ -842,8 +842,37 @@ class Application : public anari_viewer::Application
 
 } // namespace viewer
 
+static void printUsage()
+{
+  std::cout << "./anariBRDFExplorer [{--help|-h}]\n"
+            << "   [{--verbose|-v}] [{--debug|-g}]\n"
+            << "   [{--library|-l} <ANARI library>]\n"
+            << "   [{--trace|-t} <directory>]\n";
+}
+
+static void parseCommandLine(int argc, char *argv[])
+{
+  for (int i = 1; i < argc; i++) {
+    std::string arg = argv[i];
+    if (arg == "-v" || arg == "--verbose")
+      g_verbose = true;
+    if (arg == "--help" || arg == "-h") {
+      printUsage();
+      std::exit(0);
+    } else if (arg == "--noDefaultLayout")
+      g_useDefaultLayout = false;
+    else if (arg == "-l" || arg == "--library")
+      g_libraryName = argv[++i];
+    else if (arg == "--debug" || arg == "-g")
+      g_enableDebug = true;
+    else if (arg == "--trace")
+      g_traceDir = argv[++i];
+  }
+}
+
 int main(int argc, char *argv[])
 {
+  parseCommandLine(argc, argv);
   viewer::Application app;
   app.run(1920, 1200, "ANARI BRDF Explorer");
   return 0;
