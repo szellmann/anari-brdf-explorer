@@ -8,6 +8,7 @@
 #include <iostream>
 // ours
 #include "material.h"
+#include "ParamEditor.h"
 
 using box3_t = std::array<anari::math::float3, 2>;
 namespace anari {
@@ -27,7 +28,7 @@ static anari::Device g_device = nullptr;
 static const char *g_traceDir = nullptr;
 
 static  float  g_groundPlaneOpacity = { 0.5f };
-static const char* g_selectedMaterial = "Matte";
+static std::string g_selectedMaterial = "Matte";
 static  float3 g_lightDir = { 1.f, 1.f, 0.f };
 static  float  g_metallic = { 0.f };
 static  float  g_roughness = { 0.f };
@@ -431,10 +432,8 @@ static void addPlaneAndArrows(anari::Device device, anari::World world)
   anari::commitParameters(device, world);
 }
 
-static void addBRDFGeom(anari::Device device, anari::World world)
+static void addBRDFGeom(anari::Device device, anari::World world, explorer::Material mat)
 {
-  explorer::Material mat = explorer::generateMaterial();
-
   std::vector<anari::Surface> surfaces;
 
   auto brdfSurf = makeBRDFSurface(device, mat);
@@ -674,7 +673,9 @@ class Application : public anari_viewer::Application
     m_state.device = device;
     m_state.world = anari::newObject<anari::World>(device);
 
-    addBRDFGeom(m_state.device, m_state.world);
+    m_material = explorer::Material::createInstance(g_selectedMaterial);
+
+    addBRDFGeom(m_state.device, m_state.world, m_material);
     addPlaneAndArrows(m_state.device, m_state.world);
 
     anari::commitParameters(device, m_state.world);
@@ -696,12 +697,27 @@ class Application : public anari_viewer::Application
     auto *leditor = new anari_viewer::windows::LightsEditor({device});
     leditor->setWorlds({m_state.world});
 
+    auto *peditor = new windows::ParamEditor(m_material,
+                                             g_lightDir,
+                                             g_selectedMaterial);
+
+    peditor->setLightUpdateCallback(
+        [=]() {
+          addPlaneAndArrows(m_state.device, m_state.world);
+          addBRDFGeom(m_state.device, m_state.world, m_material);
+        });
+
+    peditor->setMaterialUpdateCallback(
+        [=]() {
+          addBRDFGeom(m_state.device, m_state.world, m_material);
+        });
+
     // Setup scene //
 
     anari_viewer::WindowArray windows;
     windows.emplace_back(viewport);
     windows.emplace_back(leditor);
-    //windows.emplace_back(tfeditor);
+    windows.emplace_back(peditor);
     //  windows.emplace_back(isoeditor);
 
     return windows;
@@ -716,6 +732,8 @@ class Application : public anari_viewer::Application
 
  private:
   AppState m_state;
+
+  explorer::Material m_material;
 };
 
 } // namespace viewer
