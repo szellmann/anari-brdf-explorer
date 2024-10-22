@@ -1,12 +1,11 @@
+// anari_viewer
+#include "anari_viewer/Application.h"
+#include "anari_viewer/windows/LightsEditor.h"
+#include "anari_viewer/windows/Viewport.h"
+// anari
+#define ANARI_EXTENSION_UTILITY_IMPL
+#include <anari/anari_cpp.hpp>
 #include <iostream>
-#include <GL/glew.h>
-#include <common/manip/arcball_manipulator.h>
-#include <common/manip/pan_manipulator.h>
-#include <common/manip/zoom_manipulator.h>
-#include <common/viewer_glut.h>
-#include <common/imgui/imgui.h>
-#include "renderer/common.h"
-#include "AnariCamera.h"
 
 using box3_t = std::array<anari::math::float3, 2>;
 namespace anari {
@@ -14,7 +13,16 @@ ANARI_TYPEFOR_SPECIALIZATION(box3_t, ANARI_FLOAT32_BOX3);
 ANARI_TYPEFOR_DEFINITION(box3_t);
 } // namespace anari
 
-using namespace visionaray;
+using namespace anari::math;
+
+static const bool g_true = true;
+static bool g_verbose = false;
+static bool g_useDefaultLayout = true;
+static bool g_enableDebug = false;
+static std::string g_libraryName = "environment";
+static anari::Library g_debug = nullptr;
+static anari::Device g_device = nullptr;
+static const char *g_traceDir = nullptr;
 
 static  float  g_groundPlaneOpacity = { 0.5f };
 static const char* g_selectedMaterial = "Matte";
@@ -211,6 +219,7 @@ static anari::Instance makeArrowInstance(anari::Device d,
   return inst;
 }
 
+#if 0
 static anari::Geometry generateSphereMesh(anari::Device device, dco::Material mat)
 {
   float3 viewDir{0.f,1.f,0.f};
@@ -279,7 +288,9 @@ static anari::Geometry generateSphereMesh(anari::Device device, dco::Material ma
 
   return geometry;
 }
+#endif
 
+#if 0
 static anari::Geometry generateSampleMesh(anari::Device device, dco::Material mat)
 {
   bool lightDirAsInput{true}; // to test that like doesn't leak underneath the surface
@@ -331,7 +342,9 @@ static anari::Geometry generateSampleMesh(anari::Device device, dco::Material ma
 
   return geometry;
 }
+#endif
 
+#if 0
 dco::Material generateMaterial()
 {
   dco::Material::Type type;
@@ -381,7 +394,9 @@ dco::Material generateMaterial()
   }
   return mat;
 }
+#endif
 
+#if 0
 static anari::Surface makeBRDFSurface(anari::Device device, dco::Material mat)
 {
   auto geometry = generateSphereMesh(device, mat);
@@ -396,7 +411,9 @@ static anari::Surface makeBRDFSurface(anari::Device device, dco::Material mat)
   anari::commitParameters(device, quadSurface);
   return quadSurface;
 }
+#endif
 
+#if 0
 static anari::Surface makeBRDFSamples(anari::Device device, dco::Material mat)
 {
   auto geometry = generateSampleMesh(device, mat);
@@ -412,6 +429,7 @@ static anari::Surface makeBRDFSamples(anari::Device device, dco::Material mat)
   anari::commitParameters(device, quadSurface);
   return quadSurface;
 }
+#endif
 
 static void addPlaneAndArrows(anari::Device device, anari::World world)
 {
@@ -473,6 +491,7 @@ static void addPlaneAndArrows(anari::Device device, anari::World world)
 
 static void addBRDFGeom(anari::Device device, anari::World world)
 {
+#if 0
   dco::Material mat = generateMaterial();
 
   std::vector<anari::Surface> surfaces;
@@ -487,30 +506,17 @@ static void addBRDFGeom(anari::Device device, anari::World world)
       device, world, "surface",
       anari::newArray1D(device, surfaces.data(), surfaces.size()));
   anari::commitParameters(device, world);
+#endif
 }
 
-struct Renderer : viewer_glut
+// Application definition /////////////////////////////////////////////////////
+
+class Application : public anari_viewer::Application
 {
-  Renderer();
-  ~Renderer();
 
-  void on_display() override;
-  void on_mouse_move(const visionaray::mouse_event &event) override;
-  void on_key_press(const visionaray::key_event &event) override;
-  void on_resize(int w, int h) override;
-
-  AnariCamera::SP cam;
-
-  struct {
-    anari::Library library{nullptr};
-    anari::Device device{nullptr};
-    anari::World world{nullptr};
-    anari::Renderer renderer{nullptr};
-    anari::Frame frame{nullptr};
-    anari::Light light{nullptr};
-  } anari;
 };
 
+#if 0
 Renderer::Renderer()
 {
   anari.library = anari::loadLibrary("visionaray", statusFunc);
@@ -697,19 +703,148 @@ void Renderer::on_resize(int w, int h)
 
   viewer_glut::on_resize(w, h);
 }
+#endif
 
-int main(int argc, char *argv[]) {
-  Renderer rend;
-  try {
-    rend.init(argc, argv);
-  } catch (...) {
-    return EXIT_FAILURE;
+namespace viewer {
+
+struct AppState
+{
+  anari_viewer::manipulators::Orbit manipulator;
+  anari::Device device{nullptr};
+  anari::World world{nullptr};
+};
+
+static void statusFunc(const void *userData,
+    ANARIDevice device,
+    ANARIObject source,
+    ANARIDataType sourceType,
+    ANARIStatusSeverity severity,
+    ANARIStatusCode code,
+    const char *message)
+{
+  const bool verbose = userData ? *(const bool *)userData : false;
+  if (severity == ANARI_SEVERITY_FATAL_ERROR) {
+    fprintf(stderr, "[FATAL][%p] %s\n", source, message);
+    std::exit(1);
+  } else if (severity == ANARI_SEVERITY_ERROR)
+    fprintf(stderr, "[ERROR][%p] %s\n", source, message);
+  else if (severity == ANARI_SEVERITY_WARNING)
+    fprintf(stderr, "[WARN ][%p] %s\n", source, message);
+  else if (verbose && severity == ANARI_SEVERITY_PERFORMANCE_WARNING)
+    fprintf(stderr, "[PERF ][%p] %s\n", source, message);
+  else if (verbose && severity == ANARI_SEVERITY_INFO)
+    fprintf(stderr, "[INFO ][%p] %s\n", source, message);
+  else if (verbose && severity == ANARI_SEVERITY_DEBUG)
+    fprintf(stderr, "[DEBUG][%p] %s\n", source, message);
+}
+
+static void initializeANARI()
+{
+  auto library =
+      anariLoadLibrary(g_libraryName.c_str(), statusFunc, &g_verbose);
+  if (!library)
+    throw std::runtime_error("Failed to load ANARI library");
+
+  if (g_enableDebug)
+    g_debug = anariLoadLibrary("debug", statusFunc, &g_true);
+
+  anari::Device dev = anariNewDevice(library, "default");
+
+  anari::unloadLibrary(library);
+
+  if (g_enableDebug)
+    anari::setParameter(dev, dev, "glDebug", true);
+
+#ifdef USE_GLES2
+  anari::setParameter(dev, dev, "glAPI", "OpenGL_ES");
+#else
+  anari::setParameter(dev, dev, "glAPI", "OpenGL");
+#endif
+
+  if (g_enableDebug) {
+    anari::Device dbg = anariNewDevice(g_debug, "debug");
+    anari::setParameter(dbg, dbg, "wrappedDevice", dev);
+    if (g_traceDir) {
+      anari::setParameter(dbg, dbg, "traceDir", g_traceDir);
+      anari::setParameter(dbg, dbg, "traceMode", "code");
+    }
+    anari::commitParameters(dbg, dbg);
+    anari::release(dev, dev);
+    dev = dbg;
   }
 
-  rend.add_manipulator(std::make_shared<arcball_manipulator>(*rend.cam, mouse::Left));
-  rend.add_manipulator(std::make_shared<pan_manipulator>(*rend.cam, mouse::Middle) );
-  // Additional "Alt + LMB" pan manipulator for setups w/o middle mouse button
-  rend.add_manipulator(std::make_shared<pan_manipulator>(*rend.cam, mouse::Left, keyboard::Alt));
-  rend.add_manipulator(std::make_shared<zoom_manipulator>(*rend.cam, mouse::Right));
-  rend.event_loop();
+  anari::commitParameters(dev, dev);
+
+  g_device = dev;
+}
+
+// Application definition /////////////////////////////////////////////////////
+
+class Application : public anari_viewer::Application
+{
+ public:
+  Application() = default;
+  ~Application() override = default;
+
+  anari_viewer::WindowArray setupWindows() override
+  {
+    anari_viewer::ui::init();
+
+    // ANARI //
+
+    initializeANARI();
+
+    auto device = g_device;
+
+    if (!device)
+      std::exit(1);
+
+    m_state.device = device;
+    m_state.world = anari::newObject<anari::World>(device);
+
+    anari::commitParameters(device, m_state.world);
+
+    // ImGui //
+
+    ImGuiIO &io = ImGui::GetIO();
+    io.FontGlobalScale = 1.5f;
+    io.IniFilename = nullptr;
+
+    //if (g_useDefaultLayout)
+    //  ImGui::LoadIniSettingsFromMemory(g_defaultLayout);
+
+    auto *viewport = new anari_viewer::windows::Viewport(device, "Viewport");
+    viewport->setManipulator(&m_state.manipulator);
+    viewport->setWorld(m_state.world);
+    viewport->resetView();
+
+    // Setup scene //
+
+    anari_viewer::WindowArray windows;
+    windows.emplace_back(viewport);
+    //windows.emplace_back(leditor);
+    //windows.emplace_back(tfeditor);
+    //  windows.emplace_back(isoeditor);
+
+    return windows;
+  }
+
+  void teardown() override
+  {
+    anari::release(m_state.device, m_state.world);
+    anari::release(m_state.device, m_state.device);
+    anari_viewer::ui::shutdown();
+  }
+
+ private:
+  AppState m_state;
+};
+
+} // namespace viewer
+
+int main(int argc, char *argv[])
+{
+  viewer::Application app;
+  app.run(1920, 1200, "ANARI BRDF Explorer");
+  return 0;
 }
