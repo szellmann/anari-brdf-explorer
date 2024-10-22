@@ -6,6 +6,8 @@
 #define ANARI_EXTENSION_UTILITY_IMPL
 #include <anari/anari_cpp.hpp>
 #include <iostream>
+// ours
+#include "material.h"
 
 using box3_t = std::array<anari::math::float3, 2>;
 namespace anari {
@@ -219,15 +221,14 @@ static anari::Instance makeArrowInstance(anari::Device d,
   return inst;
 }
 
-#if 0
-static anari::Geometry generateSphereMesh(anari::Device device, dco::Material mat)
+static anari::Geometry generateSphereMesh(anari::Device device, explorer::Material mat)
 {
   float3 viewDir{0.f,1.f,0.f};
   float3 lightDir = normalize(g_lightDir);
   float3 lightIntensity{1.f};
   float3 Ng{0.f,1.f,0.f}, Ns{0.f,1.f,0.f};
   int primID{0};
-  dco::Sampler *samplers{nullptr};
+  //dco::Sampler *samplers{nullptr};
   float4 *attribs{nullptr};
 
   int segments = 400;
@@ -253,9 +254,10 @@ static anari::Geometry generateSphereMesh(anari::Device device, dco::Material ma
         cosf(phi),
         sinf(phi) * sinf(theta));
 
-      viewDir = normalize(vec3(v.x,v.y,v.z));
-      float3 value = evalMaterial(mat,samplers,attribs,primID,Ng,Ns,
-                                  normalize(viewDir),lightDir,lightIntensity);
+      viewDir = normalize(float3(v.x,v.y,v.z));
+      //float3 value = evalMaterial(mat,samplers,attribs,primID,Ng,Ns,
+      //                            normalize(viewDir),lightDir,lightIntensity);
+      float3 value;
       float scale = fabsf(value.y);
       position[cnt++] = v * scale;
     }
@@ -288,7 +290,6 @@ static anari::Geometry generateSphereMesh(anari::Device device, dco::Material ma
 
   return geometry;
 }
-#endif
 
 #if 0
 static anari::Geometry generateSampleMesh(anari::Device device, dco::Material mat)
@@ -396,8 +397,7 @@ dco::Material generateMaterial()
 }
 #endif
 
-#if 0
-static anari::Surface makeBRDFSurface(anari::Device device, dco::Material mat)
+static anari::Surface makeBRDFSurface(anari::Device device, explorer::Material mat)
 {
   auto geometry = generateSphereMesh(device, mat);
   anari::commitParameters(device, geometry);
@@ -411,11 +411,10 @@ static anari::Surface makeBRDFSurface(anari::Device device, dco::Material mat)
   anari::commitParameters(device, quadSurface);
   return quadSurface;
 }
-#endif
 
-#if 0
-static anari::Surface makeBRDFSamples(anari::Device device, dco::Material mat)
+static anari::Surface makeBRDFSamples(anari::Device device, explorer::Material mat)
 {
+#if 0
   auto geometry = generateSampleMesh(device, mat);
   anari::commitParameters(device, geometry);
 
@@ -428,8 +427,8 @@ static anari::Surface makeBRDFSamples(anari::Device device, dco::Material mat)
   anari::setAndReleaseParameter(device, quadSurface, "material", material);
   anari::commitParameters(device, quadSurface);
   return quadSurface;
-}
 #endif
+}
 
 static void addPlaneAndArrows(anari::Device device, anari::World world)
 {
@@ -491,30 +490,21 @@ static void addPlaneAndArrows(anari::Device device, anari::World world)
 
 static void addBRDFGeom(anari::Device device, anari::World world)
 {
-#if 0
-  dco::Material mat = generateMaterial();
+  explorer::Material mat = explorer::generateMaterial();
 
   std::vector<anari::Surface> surfaces;
 
   auto brdfSurf = makeBRDFSurface(device, mat);
   surfaces.push_back(brdfSurf);
 
-  auto brdfSamples = makeBRDFSamples(device, mat);
-  surfaces.push_back(brdfSamples);
+  //auto brdfSamples = makeBRDFSamples(device, mat);
+  //surfaces.push_back(brdfSamples);
 
   anari::setAndReleaseParameter(
       device, world, "surface",
       anari::newArray1D(device, surfaces.data(), surfaces.size()));
   anari::commitParameters(device, world);
-#endif
 }
-
-// Application definition /////////////////////////////////////////////////////
-
-class Application : public anari_viewer::Application
-{
-
-};
 
 #if 0
 Renderer::Renderer()
@@ -642,67 +632,6 @@ void Renderer::on_display()
   }
   viewer_glut::on_display();
 }
-
-void Renderer::on_mouse_move(const visionaray::mouse_event &event)
-{
-  if (event.buttons() == mouse::NoButton)
-    return;
-
-  viewer_glut::on_mouse_move(event);
-
-  cam->commit();
-
-  // HACK:
-  anari::setParameter(anari.device, cam->getAnariHandle(), "apertureRadius", 0.f);
-  anari::commitParameters(anari.device, cam->getAnariHandle());
-}
-
-void Renderer::on_key_press(const visionaray::key_event &event)
-{
-  viewer_glut::on_key_press(event);
-
-  // static float D = 0.4f;
-
-  // if (event.key() == 'a')
-  //   D -= .1f;
-  // else if (event.key() == 'b')
-  //   D += .1f;
-
-  // anari::math::float4 clipPlane[] = {{ 0.707f, 0.f, -0.707f, D }};
-  // anari::setAndReleaseParameter(
-  //     anari.device, anari.renderer, "clipPlane",
-  //     anari::newArray1D(anari.device, clipPlane, 1));
-
-  // anari::commitParameters(anari.device, anari.renderer);
-}
-
-void Renderer::on_resize(int w, int h)
-{
-  if (!anari.frame) {
-    anari.frame = anari::newObject<anari::Frame>(anari.device);
-  }
-
-  cam->set_viewport(0, 0, w, h);
-  float aspect = w / float(h);
-  cam->perspective(60.0f * constants::degrees_to_radians<float>(), aspect, 0.001f, 1000.0f);
-  cam->commit();
-
-  // HACK:
-  anari::setParameter(anari.device, cam->getAnariHandle(), "apertureRadius", 0.f);
-  anari::commitParameters(anari.device, cam->getAnariHandle());
-
-  anari::math::uint2 size(w, h);
-
-  anari::setParameter(anari.device, anari.frame, "world", anari.world);
-  anari::setParameter(anari.device, anari.frame, "renderer", anari.renderer);
-  anari::setParameter(anari.device, anari.frame, "camera", cam->getAnariHandle());
-  //anari::setParameter(anari.device, anari.frame, "channel.color", ANARI_UFIXED8_VEC4);
-  anari::setParameter(anari.device, anari.frame, "channel.color", ANARI_UFIXED8_RGBA_SRGB);
-  anari::setParameter(anari.device, anari.frame, "size", size);
-  anari::commitParameters(anari.device, anari.frame);
-
-  viewer_glut::on_resize(w, h);
-}
 #endif
 
 namespace viewer {
@@ -802,6 +731,9 @@ class Application : public anari_viewer::Application
     m_state.device = device;
     m_state.world = anari::newObject<anari::World>(device);
 
+    //addBRDFGeom(m_state.device, m_state.world);
+    addPlaneAndArrows(m_state.device, m_state.world);
+
     anari::commitParameters(device, m_state.world);
 
     // ImGui //
@@ -818,11 +750,14 @@ class Application : public anari_viewer::Application
     viewport->setWorld(m_state.world);
     viewport->resetView();
 
+    auto *leditor = new anari_viewer::windows::LightsEditor({device});
+    leditor->setWorlds({m_state.world});
+
     // Setup scene //
 
     anari_viewer::WindowArray windows;
     windows.emplace_back(viewport);
-    //windows.emplace_back(leditor);
+    windows.emplace_back(leditor);
     //windows.emplace_back(tfeditor);
     //  windows.emplace_back(isoeditor);
 
