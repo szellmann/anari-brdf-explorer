@@ -258,7 +258,7 @@ static anari::Instance makeArrowInstance(anari::Device d,
   return inst;
 }
 
-static anari::Geometry generateSphereMesh(anari::Device device, explorer::Material mat)
+static anari::Geometry generateSphereMesh(anari::Device device, const explorer::Material &mat)
 {
   float3 viewDir{0.f,1.f,0.f};
   float3 lightDir = normalize(g_lightDir);
@@ -377,7 +377,7 @@ static anari::Geometry generateSampleMesh(anari::Device device, dco::Material ma
 }
 #endif
 
-static anari::Surface makeBRDFSurface(anari::Device device, explorer::Material mat)
+static anari::Surface makeBRDFSurface(anari::Device device, const explorer::Material &mat)
 {
   auto geometry = generateSphereMesh(device, mat);
   anari::commitParameters(device, geometry);
@@ -392,7 +392,7 @@ static anari::Surface makeBRDFSurface(anari::Device device, explorer::Material m
   return quadSurface;
 }
 
-static anari::Surface makeBRDFSamples(anari::Device device, explorer::Material mat)
+static anari::Surface makeBRDFSamples(anari::Device device, const explorer::Material &mat)
 {
 #if 0
   auto geometry = generateSampleMesh(device, mat);
@@ -468,7 +468,7 @@ static void addPlaneAndArrows(anari::Device device, anari::World world)
   anari::commitParameters(device, world);
 }
 
-static void addBRDFGeom(anari::Device device, anari::World world, explorer::Material mat)
+static void addBRDFGeom(anari::Device device, anari::World world, const explorer::Material &mat)
 {
   std::vector<anari::Surface> surfaces;
 
@@ -711,7 +711,7 @@ class Application : public anari_viewer::Application
 
     m_material = explorer::Material::createInstance(g_selectedMaterial);
 
-    addBRDFGeom(m_state.device, m_state.world, m_material);
+    addBRDFGeom(m_state.device, m_state.world, *m_material);
     addPlaneAndArrows(m_state.device, m_state.world);
 
     anari::commitParameters(device, m_state.world);
@@ -733,19 +733,19 @@ class Application : public anari_viewer::Application
     auto *leditor = new anari_viewer::windows::LightsEditor({device});
     leditor->setWorlds({m_state.world});
 
-    auto *peditor = new windows::ParamEditor(m_material,
+    auto *peditor = new windows::ParamEditor(*m_material,
                                              g_lightDir,
                                              g_selectedMaterial);
 
     peditor->setLightUpdateCallback(
         [=]() {
           addPlaneAndArrows(m_state.device, m_state.world);
-          addBRDFGeom(m_state.device, m_state.world, m_material);
+          addBRDFGeom(m_state.device, m_state.world, *m_material);
         });
 
     peditor->setMaterialUpdateCallback(
         [=]() {
-          addBRDFGeom(m_state.device, m_state.world, m_material);
+          addBRDFGeom(m_state.device, m_state.world, *m_material);
         });
 
     // Setup scene //
@@ -786,7 +786,7 @@ class Application : public anari_viewer::Application
  private:
   AppState m_state;
 
-  explorer::Material m_material;
+  explorer::Material *m_material{nullptr};
 };
 
 } // namespace viewer
