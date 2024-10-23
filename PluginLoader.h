@@ -7,4 +7,8 @@
 
 namespace explorer {
 
+void *loadMaterialPlugin(std::string libName);
+
+void freePlugin(void *lib);
+
 } // namespace explorer

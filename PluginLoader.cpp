@@ -125,7 +125,12 @@ static void *loadLibrary(
   return lib;
 }
 
-static void *loadMaterialPlugin(std::string libName)
+static void *getSymbolAddress(void *lib, const std::string &symbol)
+{
+  return LOOKUP_SYM(lib, symbol);
+}
+
+void *loadMaterialPlugin(std::string libName)
 {
   std::string errorMessage;
 
@@ -139,11 +144,6 @@ static void *loadMaterialPlugin(std::string libName)
     throw std::runtime_error(errorMessage);
 
   return lib;
-}
-
-static void *getSymbolAddress(void *lib, const std::string &symbol)
-{
-  return LOOKUP_SYM(lib, symbol);
 }
 
 static void freePlugin(void *lib)
