@@ -29,4 +29,8 @@ struct VisionarayMaterial : public Material
   static std::vector<MaterialParam> querySupportedParams(std::string_view subtype);
 };
 
+extern "C" Material *createMaterialInstance(std::string_view subtype);
+extern "C" std::vector<std::string> querySupportedSubtypes();
+extern "C" std::vector<MaterialParam> querySupportedParams(std::string_view subtypes);
+
 } // namespace explorer

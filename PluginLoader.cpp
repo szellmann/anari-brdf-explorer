@@ -125,12 +125,9 @@ static void *loadLibrary(
   return lib;
 }
 
-static void *getSymbolAddress(void *lib, const std::string &symbol)
-{
-  return LOOKUP_SYM(lib, symbol);
-}
+namespace explorer {
 
-void *loadMaterialPlugin(std::string libName)
+void *loadPlugin(std::string libName)
 {
   std::string errorMessage;
 
@@ -146,12 +143,15 @@ void *loadMaterialPlugin(std::string libName)
   return lib;
 }
 
-static void freePlugin(void *lib)
+void freePlugin(void *lib)
 {
   if (lib)
     FREE_LIB(lib);
 }
 
-namespace explorer {
+void *getSymbolAddress(void *lib, const std::string &symbol)
+{
+  return LOOKUP_SYM(lib, symbol);
+}
 
 } // namespace explorer

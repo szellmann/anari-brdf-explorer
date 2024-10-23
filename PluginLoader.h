@@ -2,13 +2,15 @@
 
 // std
 #include <string>
-// ours
-#include "material.h"
 
 namespace explorer {
 
-void *loadMaterialPlugin(std::string libName);
+typedef void *Plugin;
+
+Plugin loadPlugin(std::string libName);
 
 void freePlugin(void *lib);
+
+void *getSymbolAddress(void *lib, const std::string &symbol);
 
 } // namespace explorer

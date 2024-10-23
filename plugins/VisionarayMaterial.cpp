@@ -178,4 +178,19 @@ std::vector<MaterialParam> VisionarayMaterial::querySupportedParams(std::string_
   return result;
 }
 
+Material *createMaterialInstance(std::string_view subtype)
+{
+  return new VisionarayMaterial(subtype);
+}
+
+std::vector<std::string> querySupportedSubtypes()
+{
+  return VisionarayMaterial::querySupportedSubtypes();
+}
+
+std::vector<MaterialParam> querySupportedParams(std::string_view subtypes)
+{
+  return VisionarayMaterial::querySupportedParams(subtypes);
+}
+
 } // namespace explorer

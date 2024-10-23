@@ -709,6 +709,12 @@ class Application : public anari_viewer::Application
     m_state.device = device;
     m_state.world = anari::newObject<anari::World>(device);
 
+    explorer::Material::loadPlugin("visionaray_material");
+    if (!explorer::Material::pluginLoaded()) {
+      std::cerr << "Plugin not loaded, nothing much we can do here....\n";
+      exit(0);
+    }
+
     m_material = explorer::Material::createInstance(g_selectedMaterial);
 
     addBRDFGeom(m_state.device, m_state.world, *m_material);
