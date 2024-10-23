@@ -41,6 +41,42 @@ static  bool   g_showAxes = { true };
 static box3_t  g_bounds = { anari::math::float3{-3.f, 0.f, -3.f},
                             anari::math::float3{3.f, 1.f, 3.f} };
 
+static const char *g_defaultLayout =
+    R"layout(
+[Window][MainDockSpace]
+Pos=0,25
+Size=1440,813
+Collapsed=0
+
+[Window][Viewport]
+Pos=551,25
+Size=889,813
+Collapsed=0
+DockId=0x00000003,0
+
+[Window][Lights Editor]
+Pos=0,25
+Size=549,813
+Collapsed=0
+DockId=0x00000002,1
+
+[Window][Param Editor]
+Pos=0,25
+Size=549,813
+Collapsed=0
+DockId=0x00000002,0
+
+[Window][Debug##Default]
+Pos=60,60
+Size=400,400
+Collapsed=0
+
+[Docking][Data]
+DockSpace   ID=0x782A6D6B Window=0xDEDC5B90 Pos=0,25 Size=1440,813 Split=X
+  DockNode  ID=0x00000002 Parent=0x782A6D6B SizeRef=549,1174 Selected=0xE3280322
+  DockNode  ID=0x00000003 Parent=0x782A6D6B SizeRef=1369,1174 CentralNode=1 Selected=0x13926F0B
+)layout";
+
 void statusFunc(const void *userData,
     ANARIDevice device,
     ANARIObject source,
@@ -686,8 +722,8 @@ class Application : public anari_viewer::Application
     io.FontGlobalScale = 1.5f;
     io.IniFilename = nullptr;
 
-    //if (g_useDefaultLayout)
-    //  ImGui::LoadIniSettingsFromMemory(g_defaultLayout);
+    if (g_useDefaultLayout)
+      ImGui::LoadIniSettingsFromMemory(g_defaultLayout);
 
     auto *viewport = new anari_viewer::windows::Viewport(device, "Viewport");
     viewport->setManipulator(&m_state.manipulator);
@@ -721,6 +757,23 @@ class Application : public anari_viewer::Application
     //  windows.emplace_back(isoeditor);
 
     return windows;
+  }
+
+  void buildMainMenuUI()
+  {
+  std::cout << "???\n";
+    if (ImGui::BeginMainMenuBar()) {
+      if (ImGui::BeginMenu("File")) {
+        if (ImGui::MenuItem("print ImGui ini")) {
+          const char *info = ImGui::SaveIniSettingsToMemory();
+          printf("%s\n", info);
+        }
+
+        ImGui::EndMenu();
+      }
+
+      ImGui::EndMainMenuBar();
+    }
   }
 
   void teardown() override
