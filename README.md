@@ -1,10 +1,13 @@
 ANARI BRDF Explorer
 ===================
-
 The BRDF explorer is a re-imagination of [WDAS's original BRDF explorer tool][1]
 using ANARI. It was developed as a project for the [ANARI Hackathon][2] in October 2024.
 The tool can as of now load user-defined BRDFs as C++ plug-ins (see the [plugins](/plugins)
-folder for an example of how to do this). Through BRDF parameter introspection (user
+folder for an example of how to do this).
+
+https://github.com/user-attachments/assets/6068c605-cffe-4b48-a16a-d62a6344e23a
+
+Through BRDF parameter introspection (user
 implements the functions `querySupportedSubtypes()` (the BRDF names) and
 `querySupportedParams()` (list of accepted parameters)) an (Im-)GUI to manipulate BRDFs
 is dynamically created. The BRDF explorer currently supports visualizing the BRDF surface
