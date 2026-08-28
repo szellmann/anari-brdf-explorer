@@ -3,47 +3,41 @@
 
 #pragma once
 
-// glad
-#include <glad/glad.h>
-// anari
-#include "anari_viewer/windows/Window.h"
-// std
+#include "Window.h"
 #include <array>
 #include <functional>
 #include <string>
 #include <vector>
-// ours
+#include <anari/anari_cpp.hpp>
 #include "material.h"
-
-namespace windows {
 
 using ParamUpdateCallback = std::function<void()>;
 
-class ParamEditor : public anari_viewer::windows::Window
+/**
+ * Parameter editor window replacing anari_viewer::windows::Window
+ * Provides ImGui UI for editing BRDF parameters and light settings
+ */
+class ParamEditor : public Window
 {
- public:
+public:
   ParamEditor(explorer::Material &mat,
               anari::math::float3 &lightDir,
               std::string &selectedMaterial,
               const char *name = "Param Editor");
-  ~ParamEditor();
+  ~ParamEditor() override;
 
   void setLightUpdateCallback(ParamUpdateCallback cb);
   void setMaterialUpdateCallback(ParamUpdateCallback cb);
 
   void buildUI() override;
 
- private:
+private:
   void drawEditor();
 
   ParamUpdateCallback m_lightUpdateCallback;
   ParamUpdateCallback m_materialUpdateCallback;
 
   explorer::Material &m_material;
-
   anari::math::float3 &m_lightDir;
-
   std::string &m_selectedMaterial;
 };
-
-} // namespace windows

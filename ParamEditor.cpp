@@ -1,9 +1,8 @@
-// Copyright 2022 Jefferson Amstutz
+// Copyright 2024 Stefan Zellmann
 // SPDX-License-Identifier: Apache-2.0
 
 #include "ParamEditor.h"
-
-namespace windows {
+#include <imgui.h>
 
 ParamEditor::ParamEditor(explorer::Material &mat,
                          anari::math::float3 &lightDir,
@@ -16,7 +15,7 @@ ParamEditor::ParamEditor(explorer::Material &mat,
 {
 }
 
-ParamEditor::~ParamEditor() {}
+ParamEditor::~ParamEditor() = default;
 
 void ParamEditor::setMaterialUpdateCallback(ParamUpdateCallback cb)
 {
@@ -30,7 +29,14 @@ void ParamEditor::setLightUpdateCallback(ParamUpdateCallback cb)
 
 void ParamEditor::buildUI()
 {
-  drawEditor();
+  if (!m_visible)
+    return;
+
+  ImGui::SetNextWindowSize(ImVec2(400, 600), ImGuiCond_FirstUseEver);
+  if (ImGui::Begin(m_name.c_str(), &m_visible)) {
+    drawEditor();
+  }
+  ImGui::End();
 }
 
 void ParamEditor::drawEditor()
@@ -43,7 +49,7 @@ void ParamEditor::drawEditor()
   const char *selected = m_selectedMaterial.c_str();
   if (ImGui::BeginCombo("Material Type", m_selectedMaterial.c_str())) {
     for (auto &st : subtypes) {
-      if (ImGui::Selectable(st.c_str(), m_selectedMaterial==st))
+      if (ImGui::Selectable(st.c_str(), m_selectedMaterial == st))
         selected = st.c_str();
     }
     if (std::string(selected) != m_selectedMaterial) {
@@ -60,7 +66,7 @@ void ParamEditor::drawEditor()
     auto actualParam = m_material.getParameter(param.name);
     if (actualParam.type == explorer::DataType::Float) {
       float value = std::any_cast<float>(actualParam.value);
-      bool updated = ImGui::DragFloat(actualParam.name.c_str(), &value, value, 0.f, 1.f);
+      bool updated = ImGui::DragFloat(actualParam.name.c_str(), &value, 0.01f, 0.f, 1.f);
       if (updated) {
         auto newParam = actualParam;
         newParam.value = value;
@@ -83,5 +89,3 @@ void ParamEditor::drawEditor()
     m_materialUpdateCallback();
   }
 }
-
-} // namespace windows
