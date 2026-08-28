@@ -3,26 +3,14 @@
 
 #include "Viewport.h"
 #include <imgui.h>
-#include <GL/gl.h>
+#include <SDL3/SDL.h>
 
 Viewport::Viewport(anari::Device device, const std::string &name)
   : Window(name), m_device(device)
 {
-  // Initialize framebuffer and textures for rendering
-  glGenFramebuffers(1, &m_framebuffer);
-  glGenTextures(1, &m_colorTexture);
-  glGenTextures(1, &m_depthTexture);
 }
 
-Viewport::~Viewport()
-{
-  if (m_framebuffer)
-    glDeleteFramebuffers(1, &m_framebuffer);
-  if (m_colorTexture)
-    glDeleteTextures(1, &m_colorTexture);
-  if (m_depthTexture)
-    glDeleteTextures(1, &m_depthTexture);
-}
+Viewport::~Viewport() = default;
 
 void Viewport::setManipulator(anari_viewer::manipulators::Orbit *manipulator)
 {
@@ -44,8 +32,7 @@ void Viewport::render()
   if (!m_device || !m_world)
     return;
 
-  // Render ANARI frame to texture
-  // TODO: Implement ANARI rendering to texture
+  // TODO: Implement ANARI rendering
 }
 
 void Viewport::buildUI()
@@ -61,10 +48,8 @@ void Viewport::buildUI()
       m_height = (int)viewportSize.y;
       render();
       
-      // Display rendered texture
-      ImGui::Image((void *)(intptr_t)m_colorTexture,
-                   ImVec2(m_width, m_height),
-                   ImVec2(0, 1), ImVec2(1, 0));
+      // Placeholder for rendered content
+      ImGui::TextWrapped("Viewport: %dx%d", m_width, m_height);
     }
   }
   ImGui::End();

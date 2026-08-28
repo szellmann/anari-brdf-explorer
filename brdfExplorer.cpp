@@ -1,12 +1,8 @@
 // Copyright 2024 Stefan Zellmann
 // SPDX-License-Identifier: Apache-2.0
 
-// GLFW/OpenGL
-#include <GLFW/glfw3.h>
-#include <GL/gl.h>
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
+// SDL3
+#include <SDL3/SDL.h>
 
 // ANARI
 #define ANARI_EXTENSION_UTILITY_IMPL
@@ -18,14 +14,11 @@
 #include <vector>
 #include <array>
 #include <memory>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 // Ours
 #include "material.h"
 #include "ParamEditor.h"
 #include "Viewport.h"
-#include "TSDDenoiser.h"
 
 using box3_t = std::array<anari::math::float3, 2>;
 namespace anari {
@@ -53,10 +46,6 @@ static bool g_showAxes = true;
 static box3_t g_bounds = {
     anari::math::float3{-3.f, 0.f, -3.f},
     anari::math::float3{3.f, 1.f, 3.f}};
-
-// Denoiser
-static TSDDenoiser g_denoiser;
-static bool g_enableDenoiser = false;
 
 // ============================================================================
 // ANARI Setup
@@ -112,7 +101,6 @@ static void initializeANARI()
     dev = dbg;
   }
 
-  anari::setParameter(dev, dev, "glAPI", "OpenGL");
   anari::commitParameters(dev, dev);
 
   g_device = dev;
@@ -441,36 +429,34 @@ int main(int argc, char *argv[])
 {
   parseCommandLine(argc, argv);
 
-  // Initialize GLFW
-  if (!glfwInit()) {
-    std::cerr << "Failed to initialize GLFW" << std::endl;
+  // Initialize SDL3
+  if (!SDL_Init(SDL_INIT_VIDEO)) {
+    std::cerr << "Failed to initialize SDL3" << std::endl;
     return 1;
   }
 
-  const char *glsl_version = "#version 150";
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-
-  GLFWwindow *window =
-      glfwCreateWindow(1440, 900, "ANARI BRDF Explorer", NULL, NULL);
+  SDL_Window *window = SDL_CreateWindow("ANARI BRDF Explorer", 1440, 900, 0);
   if (!window) {
-    std::cerr << "Failed to create GLFW window" << std::endl;
-    glfwTerminate();
+    std::cerr << "Failed to create SDL3 window" << std::endl;
+    SDL_Quit();
     return 1;
   }
 
-  glfwMakeContextCurrent(window);
-  glfwSwapInterval(1); // Enable vsync
+  SDL_Renderer *renderer = SDL_CreateRenderer(window, nullptr);
+  if (!renderer) {
+    std::cerr << "Failed to create SDL3 renderer" << std::endl;
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 1;
+  }
 
   // Setup ImGui
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
   io.FontGlobalScale = 1.5f;
 
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init(glsl_version);
+  ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
+  ImGui_ImplSDLRenderer3_Init(renderer);
   ImGui::StyleColorsDark();
 
   try {
@@ -519,12 +505,19 @@ int main(int argc, char *argv[])
     appState.windows.push_back(std::move(paramEditor));
 
     // Main loop
-    while (!glfwWindowShouldClose(window)) {
-      glfwPollEvents();
+    bool running = true;
+    while (running) {
+      SDL_Event event;
+      while (SDL_PollEvent(&event)) {
+        ImGui_ImplSDL3_ProcessEvent(&event);
+        if (event.type == SDL_EVENT_QUIT) {
+          running = false;
+        }
+      }
 
       // Start ImGui frame
-      ImGui_ImplOpenGL3_NewFrame();
-      ImGui_ImplGlfw_NewFrame();
+      ImGui_ImplSDLRenderer3_NewFrame();
+      ImGui_ImplSDL3_NewFrame();
       ImGui::NewFrame();
 
       // Build menu bar
@@ -538,14 +531,6 @@ int main(int argc, char *argv[])
           }
           ImGui::EndMenu();
         }
-
-        if (ImGui::BeginMenu("Tools")) {
-          if (ImGui::MenuItem("Enable Denoiser", nullptr, &g_enableDenoiser)) {
-            g_denoiser.setEnabled(g_enableDenoiser);
-          }
-          ImGui::EndMenu();
-        }
-
         ImGui::EndMainMenuBar();
       }
 
@@ -556,15 +541,12 @@ int main(int argc, char *argv[])
 
       // Rendering
       ImGui::Render();
-      int display_w, display_h;
-      glfwGetFramebufferSize(window, &display_w, &display_h);
-      glViewport(0, 0, display_w, display_h);
-      glClearColor(0.45f, 0.55f, 0.60f, 1.00f);
-      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      SDL_SetRenderDrawColor(renderer, 0x45, 0x55, 0x60, 0xff);
+      SDL_RenderClear(renderer);
 
-      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+      ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
 
-      glfwSwapBuffers(window);
+      SDL_RenderPresent(renderer);
     }
 
     // Cleanup
@@ -578,12 +560,13 @@ int main(int argc, char *argv[])
   }
 
   // Cleanup ImGui
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
+  ImGui_ImplSDLRenderer3_Shutdown();
+  ImGui_ImplSDL3_Shutdown();
   ImGui::DestroyContext();
 
-  glfwDestroyWindow(window);
-  glfwTerminate();
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(window);
+  SDL_Quit();
 
   return 0;
 }
