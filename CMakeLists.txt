@@ -62,10 +62,11 @@ target_link_libraries(${PROJECT_NAME}
     SDL3::SDL3
 )
 
-# Include TSD headers
+# Add TSD include directories
 target_include_directories(${PROJECT_NAME}
   PRIVATE
     ${TSD_BUILD_DIR}
+    ${TSD_BUILD_DIR}/tsd_ext_imgui_sdl
 )
 
 # Plugin helper library
