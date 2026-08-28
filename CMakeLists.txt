@@ -13,30 +13,24 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 # Dependencies
 find_package(anari 0.11.0 REQUIRED)
 
-# TSD provides SDL3 + ImGui - can be used in two ways:
-# 1. As part of VisRTX build (via add_subdirectory)
-# 2. As installed package (if TSD was built with CMAKE_INSTALL_PREFIX)
-set(TSD_DIR "" CACHE PATH "Path to TSD (NVIDIA/VisRTX) source or install directory")
+# TSD build directory (where you built VisRTX)
+# This should be the CMake build directory, e.g., /path/to/VisRTX/build
+set(TSD_BUILD_DIR "" CACHE PATH "Path to TSD CMake build directory")
 
-if(NOT TSD_DIR)
-  message(FATAL_ERROR "TSD_DIR must be specified (path to NVIDIA/VisRTX source or installation)")
+if(NOT TSD_BUILD_DIR)
+  message(FATAL_ERROR "TSD_BUILD_DIR must be specified (e.g., path to VisRTX/build)")
 endif()
 
-# Try to find TSD as installed package first
-if(EXISTS "${TSD_DIR}/lib/cmake/tsd-config.cmake")
-  message(STATUS "Found TSD installation at: ${TSD_DIR}")
-  list(APPEND CMAKE_PREFIX_PATH ${TSD_DIR})
-  find_package(tsd REQUIRED)
-elseif(EXISTS "${TSD_DIR}/tsd/CMakeLists.txt")
-  # Build TSD as subdirectory (requires ANARI to be available)
-  message(STATUS "Building TSD from source at: ${TSD_DIR}/tsd")
-  set(TSD_STANDALONE_BUILD 0)
-  set(TSD_BUILD_APPS OFF)
-  set(TSD_BUILD_INTERACTIVE_APPS OFF)
-  set(TSD_BUILD_UI_LIBRARY ON)
-  add_subdirectory(${TSD_DIR}/tsd ${CMAKE_BINARY_DIR}/tsd)
-else()
-  message(FATAL_ERROR "Could not find TSD at ${TSD_DIR}")
+if(NOT EXISTS "${TSD_BUILD_DIR}")
+  message(FATAL_ERROR "TSD_BUILD_DIR does not exist: ${TSD_BUILD_DIR}")
+endif()
+
+message(STATUS "Using TSD build from: ${TSD_BUILD_DIR}")
+
+# Find SDL3 that TSD built
+find_package(SDL3 QUIET HINTS ${TSD_BUILD_DIR})
+if(NOT SDL3_FOUND)
+  message(STATUS "SDL3 not found via find_package, will link directly")
 endif()
 
 # Main executable
@@ -49,11 +43,29 @@ add_executable(${PROJECT_NAME}
   Viewport.cpp
 )
 
+# Link against ANARI
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
     anari::anari
+)
+
+# Link against TSD build artifacts
+target_link_directories(${PROJECT_NAME}
+  PRIVATE
+    ${TSD_BUILD_DIR}
+)
+
+# Link against ImGui and SDL3 from TSD build
+target_link_libraries(${PROJECT_NAME}
+  PRIVATE
     tsd_ext_imgui_sdl
     SDL3::SDL3
+)
+
+# Include TSD headers
+target_include_directories(${PROJECT_NAME}
+  PRIVATE
+    ${TSD_BUILD_DIR}
 )
 
 # Plugin helper library
