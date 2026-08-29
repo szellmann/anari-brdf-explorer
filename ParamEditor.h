@@ -3,8 +3,6 @@
 
 #pragma once
 
-// glad
-#include <glad/glad.h>
 // anari
 #include "anari_viewer/windows/Window.h"
 // std
@@ -22,7 +20,8 @@ using ParamUpdateCallback = std::function<void()>;
 class ParamEditor : public anari_viewer::windows::Window
 {
  public:
-  ParamEditor(explorer::Material &mat,
+  ParamEditor(anari_viewer::Application *app,
+              explorer::Material &mat,
               anari::math::float3 &lightDir,
               std::string &selectedMaterial,
               const char *name = "Param Editor");

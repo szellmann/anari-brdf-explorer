@@ -13,7 +13,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 find_package(anari 0.11.0 REQUIRED COMPONENTS viewer)
 
 add_executable(${PROJECT_NAME} brdfExplorer.cpp ParamEditor.cpp PluginLoader.cpp material.cpp)
-target_link_libraries(${PROJECT_NAME} anari::anari anari::anari_viewer)
+target_link_libraries(${PROJECT_NAME} anari::anari anari::anari_viewer anari::helium)
 
 add_library(${PROJECT_NAME}_plugin_helper material.cpp)
 target_include_directories(${PROJECT_NAME}_plugin_helper PUBLIC

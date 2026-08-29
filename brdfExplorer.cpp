@@ -731,15 +731,16 @@ class Application : public anari_viewer::Application
     if (g_useDefaultLayout)
       ImGui::LoadIniSettingsFromMemory(g_defaultLayout);
 
-    auto *viewport = new anari_viewer::windows::Viewport(device, "Viewport");
+    auto *viewport = new anari_viewer::windows::Viewport(this, device, "Viewport");
     viewport->setManipulator(&m_state.manipulator);
     viewport->setWorld(m_state.world);
     viewport->resetView();
 
-    auto *leditor = new anari_viewer::windows::LightsEditor({device});
+    auto *leditor = new anari_viewer::windows::LightsEditor(this, {device});
     leditor->setWorlds({m_state.world});
 
-    auto *peditor = new windows::ParamEditor(*m_material,
+    auto *peditor = new windows::ParamEditor(this,
+                                             *m_material,
                                              g_lightDir,
                                              g_selectedMaterial);
 

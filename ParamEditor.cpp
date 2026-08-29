@@ -5,11 +5,12 @@
 
 namespace windows {
 
-ParamEditor::ParamEditor(explorer::Material &mat,
+ParamEditor::ParamEditor(anari_viewer::Application *app,
+                         explorer::Material &mat,
                          anari::math::float3 &lightDir,
                          std::string &selectedMaterial,
                          const char *name)
-  : Window(name, true)
+  : Window(app, name, true)
   , m_material(mat)
   , m_lightDir(lightDir)
   , m_selectedMaterial(selectedMaterial)

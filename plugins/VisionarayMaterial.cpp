@@ -25,21 +25,23 @@ anari::math::float3 VisionarayMaterial::eval(anari::math::float3 Ng,
                                              anari::math::float3 lightDir,
                                              anari::math::float3 lightIntensity) const
 {
-  visionaray::dco::Sampler *samplers{nullptr};
-  visionaray::float4 *attribs{nullptr};
+  visionaray::DeviceObjectRegistry onDevice{};
+  visionaray::dco::AttributeRec attribs{};
+  visionaray::vec3 objPos;
   int primID{0};
 
   visionaray::vec3 visionarayNg = cast(Ng);
   visionaray::vec3 visionarayNs = cast(Ns);
+  visionaray::vec3 T,B;
   visionaray::vec3 visionarayViewDir = cast(viewDir);
   visionaray::vec3 visionarayLightDir = cast(lightDir);
   visionaray::vec3 visionarayLightIntensity = cast(lightIntensity);
-  return cast(evalMaterial(mat,samplers,attribs,primID,
+  return cast(evalMaterial(mat,onDevice,attribs,objPos,primID,
               visionarayNg,
               visionarayNs,
+              T,B, // TODO!
               normalize(visionarayViewDir),
-              visionarayLightDir,
-              visionarayLightIntensity));
+              visionarayLightDir));
 }
 
 void VisionarayMaterial::setSubtype(std::string_view subtype)
